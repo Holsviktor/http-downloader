@@ -1,0 +1,88 @@
+#!/bin/python3
+import requests
+import os
+import threading
+import sys
+
+def directory_download(url, download_directory, verbose = False):
+    # Create new directory in fs for the directory which is to be downloaded
+    if download_directory[-1] != '/':
+        download_directory += '/'
+    try:
+        os.mkdir(os.getcwd() + "/" + download_directory)
+    except FileExistsError as e:
+        if verbose:
+            sys.stderr.write(f"[-] Folder {os.getcwd()}/{download_directory} already exists\n")
+
+    # Get the directory listing
+    r = requests.get(url)
+    body = r.text.replace('</body>', '<body').split('<body>')[1]
+    files = []
+    directories = []
+    for line in body.split('\n'):
+        if '<li>' in line:
+            filename = line[line.find('href="'):].split('"')[1]
+            if filename[-1] == '/':
+                directories.append(filename)
+            else:
+                files.append(filename)    
+
+    # Download all files and recursively download all directories
+    for file in files:
+        r = requests.get(url + file)
+        with open(download_directory + file, 'w') as f:
+            f.write(r.text)
+            if verbose:
+                print(f"[+] File {file} downloaded successfully")
+            
+    threads = []
+    for directory in directories:
+        new_url = url + directory
+        new_dir = download_directory + directory
+        threads.append(threading.Thread(target=directory_download, args=[new_url, new_dir]))
+        threads[-1].start()
+        print(f"[+] Downloading contents of directory {new_dir}")
+
+    for thread in threads:
+        thread.join()
+
+if __name__ == "__main__":
+    verbose = False
+    url = None
+    download_directory = None
+    set_download_directory = False
+    set_url = False
+    if len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            if set_download_directory:
+                download_directory = arg
+                set_download_directory = False
+            elif set_url:
+                url = arg
+                set_url = False
+
+            if len(arg) >= 2:
+                if arg[:2] == "--":
+                    if arg == '--verbose':
+                        verbose = True
+                    elif arg in ['--directory', '--destination', '--dst']:
+                        set_download_directory = True
+                    elif arg in ['--src', '--source', '--url']:
+                        set_url = True
+                elif arg[0] == '-':
+                    if 'v' in arg:
+                        verbose = True
+                    if 'd' in arg:
+                        set_download_directory = True
+                    elif 's' in arg:
+                        set_url = True
+    if url == None:
+        print("""Usage:
+    -s, --url, --src, --source : set the source address from which to download.
+    -d, --directory, --destination, --dst : name of the folder to download to. Default value: downloads
+    -v, --verbose : print names of files downloaded and write errors to stdout.""")
+        sys.exit(0)
+    if download_directory is None:
+        download_directory = "downloads/"
+    directory_download(url, download_directory, verbose)
+
