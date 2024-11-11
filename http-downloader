@@ -30,8 +30,8 @@ def directory_download(url, download_directory, verbose = False):
     # Download all files and recursively download all directories
     for file in files:
         r = requests.get(url + file)
-        with open(download_directory + file, 'w') as f:
-            f.write(r.text)
+        with open(download_directory + file, 'wb') as f:
+            f.write(r.content)
             if verbose:
                 print(f"[+] File {file} downloaded successfully")
             
