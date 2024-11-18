@@ -6,8 +6,11 @@ import sys
 
 def directory_download(url, download_directory, verbose = False):
     # Create new directory in fs for the directory which is to be downloaded
-    if "http://" not in url:
-        url = "http://" + url
+    if "http" not in url.split('://'):
+        if "://" in url:
+            url = "http://" + url.split('://')[1]
+        else:
+            url = "http://" + url
     if url[-1] != '/':
         url = url + '/'
     if download_directory[-1] != '/':
