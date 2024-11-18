@@ -15,17 +15,18 @@ def directory_download(url, download_directory, verbose = False):
         url = url + '/'
     if download_directory[-1] != '/':
         download_directory += '/'
-    try:
-        os.mkdir(os.getcwd() + "/" + download_directory)
-    except FileExistsError as e:
-        if verbose:
-            sys.stderr.write(f"[-] Folder {os.getcwd()}/{download_directory} already exists\n")
 
     # Get the directory listing
-    r = requests.get(url)
+    try:
+        r = requests.get(url)
+    except requests.exceptions.ConnectionError as e:
+        print(f"[-] Could not connect to {url}")
+        print("aborting")
+        return
     body = r.text.replace('</body>', '<body').split('<body>')[1]
     files = []
     directories = []
+
     for line in body.split('\n'):
         if '<li>' in line:
             filename = line[line.find('href="'):].split('"')[1]
@@ -33,6 +34,13 @@ def directory_download(url, download_directory, verbose = False):
                 directories.append(filename)
             else:
                 files.append(filename)    
+
+    # Create new directory to download files to
+    try:
+        os.mkdir(os.getcwd() + "/" + download_directory)
+    except FileExistsError as e:
+        if verbose:
+            sys.stderr.write(f"[-] Folder {os.getcwd()}/{download_directory} already exists\n")
 
     # Download all files and recursively download all directories
     for file in files:
@@ -60,14 +68,12 @@ if __name__ == "__main__":
     set_download_directory = False
     set_url = False
     help_prompt = False
-    if sys.argv[1][0] != '-':
-        url = sys.argv[1]
     if len(sys.argv) > 1:
         for arg in sys.argv[1:]:
             if set_download_directory:
                 download_directory = arg
                 set_download_directory = False
-            elif set_url:
+            elif set_url or arg[0] != '-':
                 url = arg
                 set_url = False
 
