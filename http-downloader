@@ -59,6 +59,9 @@ if __name__ == "__main__":
     download_directory = None
     set_download_directory = False
     set_url = False
+    help_prompt = False
+    if sys.argv[1][0] != '-':
+        url = sys.argv[1]
     if len(sys.argv) > 1:
         for arg in sys.argv[1:]:
             if set_download_directory:
@@ -76,6 +79,8 @@ if __name__ == "__main__":
                         set_download_directory = True
                     elif arg in ['--src', '--source', '--url']:
                         set_url = True
+                    elif arg == '--help':
+                        help_prompt = True
                 elif arg[0] == '-':
                     if 'v' in arg:
                         verbose = True
@@ -83,7 +88,10 @@ if __name__ == "__main__":
                         set_download_directory = True
                     elif 's' in arg:
                         set_url = True
-    if url == None:
+                    if 'h' in arg:
+                        help_prompt = True
+
+    if url == None or help_prompt:
         print("""Usage:
     -s, --url, --src, --source : set the source address from which to download.
     -d, --directory, --destination, --dst : name of the folder to download to. Default value: downloads
